@@ -1,14 +1,14 @@
 # Fdb version 3
-["bibtex byolv2"] 1610087431 "byolv2.aux" "byolv2.bbl" "byolv2" 1610087432
+["bibtex byolv2"] 1610139181 "byolv2.aux" "byolv2.bbl" "byolv2" 1610139182
   "/usr/local/texlive/2020/texmf-dist/bibtex/bst/base/plain.bst" 1292289607 20613 bd3fbfa9f64872b81ac57a0dd2ed855f ""
-  "byolv2.aux" 1610087432 189 751a9bbd1ee157095d6aa15195bccce8 "pdflatex"
+  "byolv2.aux" 1610139182 289 f10d48f04d925555c139becc428cf0e3 "pdflatex"
   "refs.bib" 0 -1 0 ""
   (generated)
-  "byolv2.bbl"
   "byolv2.blg"
-["pdflatex"] 1610087431 "/Users/seri/BYOLv2/doc/byolv2.tex" "/Users/seri/BYOLv2/doc/byolv2.pdf" "byolv2" 1610087432
-  "/Users/seri/BYOLv2/doc/byolv2.aux" 1610087432 189 751a9bbd1ee157095d6aa15195bccce8 ""
-  "/Users/seri/BYOLv2/doc/byolv2.tex" 1610087429 3570 d4f55ea1ef260b26f2bb25417a98e972 ""
+  "byolv2.bbl"
+["pdflatex"] 1610139181 "/Users/seri/BYOLv2/doc/byolv2.tex" "/Users/seri/BYOLv2/doc/byolv2.pdf" "byolv2" 1610139182
+  "/Users/seri/BYOLv2/doc/byolv2.aux" 1610139182 289 f10d48f04d925555c139becc428cf0e3 ""
+  "/Users/seri/BYOLv2/doc/byolv2.tex" 1610139177 7868 c257ca46dbcdd507622d7c381bc85b1e ""
   "/usr/local/texlive/2020/texmf-dist/fonts/enc/dvips/base/8r.enc" 1165713224 4850 80dc9bab7f31fb78a000ccfed0e27cab ""
   "/usr/local/texlive/2020/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
   "/usr/local/texlive/2020/texmf-dist/fonts/tfm/adobe/times/ptmb7t.tfm" 1136768653 2172 fd0c924230362ff848a33632ed45dc23 ""
@@ -63,12 +63,12 @@
   "/usr/local/texlive/2020/texmf-var/fonts/map/pdftex/updmap/pdftex.map" 1586288239 4811913 0be9a7e86c70a26e5e3042966bcd7097 ""
   "/usr/local/texlive/2020/texmf-var/web2c/pdftex/pdflatex.fmt" 1609084969 2432454 b7146e7510166a512d8ffafda0667e60 ""
   "/usr/local/texlive/2020/texmf.cnf" 1586288231 577 d60164b4589a341208aff7a667fbbdcb ""
-  "byolv2.aux" 1610087432 189 751a9bbd1ee157095d6aa15195bccce8 "pdflatex"
+  "byolv2.aux" 1610139182 289 f10d48f04d925555c139becc428cf0e3 "pdflatex"
   "byolv2.bbl" 0 -1 0 "bibtex byolv2"
-  "byolv2.tex" 1610087429 3570 d4f55ea1ef260b26f2bb25417a98e972 ""
+  "byolv2.tex" 1610139177 7868 c257ca46dbcdd507622d7c381bc85b1e ""
   (generated)
   "/Users/seri/BYOLv2/doc/byolv2.log"
+  "/Users/seri/BYOLv2/doc/byolv2.pdf"
   "byolv2.pdf"
   "byolv2.aux"
-  "/Users/seri/BYOLv2/doc/byolv2.pdf"
   "byolv2.log"
