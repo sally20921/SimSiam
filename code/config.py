@@ -16,7 +16,7 @@ config = {
     'dropout': 0.5,
     'learning_rate': 1e-4,
     'weight_decay': 1e-5,
-    'loss_name': 'cross_entropy_loss',
+    'loss_name': 'sim_siam_loss',
     'optimizer': 'adam',
     'metrics': [],
     'log_cmd': True,

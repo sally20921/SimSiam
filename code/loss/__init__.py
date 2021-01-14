@@ -19,9 +19,7 @@ def add_loss():
             module = eval(name)
             for member in dir(module):
                 member = getattr(module, member)
-                if hasattr(member, '__mro__') and \
-                        _Loss in inspect.getmro(member):
-                    loss_dict[underscore(str(member.__name__))] = member
+                loss_dict[underscore(str(member.__name__))] = member
 
 def get_loss(args):
     loss = loss_dict[args.loss_name]
