@@ -55,17 +55,17 @@ class Cli:
         #    print('Test loading train data')
         #    batch = prepare_batch(args, batch)
 
-        #train_iter_test = next(iter(iters['train']))
-        # see if train to test proceeds well
-        #for key, value in train_iter_test.items():
-        #    if isinstance(value, torch.Tensor):
-        #        print(key, value.shape)
-        #    else:
-        #        print(key, value)
+        train_iter_test = next(iter(iters['train'])) # take out 1 batch
+        # see if iteration in train proceeds well
+        for (key1, key2), value in train_iter_test.items():
+            if isinstance(value, torch.Tensor):
+                print(key1, key2, value.shape)
+            else:
+                print(key1, key2, value)
         
-        print("test loading val data")
-        for batch_idx, batch in tqdm(iters['val']):
-            batch = prepare_batch(args, batch)
+        #print("test loading val data")
+        #for batch_idx, batch in tqdm(iters['val']):
+        #    batch = prepare_batch(args, batch)
 
         #for mode in modes:
         #    print('Test loading %s data' % mode)

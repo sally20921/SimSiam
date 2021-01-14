@@ -50,6 +50,7 @@ def get_now():
 #        if torch.is_tensor(value):
 #            net_input[key] = value.to(args.device).contiguous()
 
+# for 1 batch
 def prepare_batch(args, batch):
     # batch = (inputs, targets)
     net_input = batch[0].to(args.device).contiguous()
