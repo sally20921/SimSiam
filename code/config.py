@@ -1,5 +1,5 @@
 config = { 
-    'model_name': 'simsiam', 
+    'model_name': 'sim_siam', 
     'log_path': 'data/log',
     'batch_sizes':  (16, 24, 12),
     'use_inputs':['images'],
