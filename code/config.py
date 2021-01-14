@@ -1,12 +1,12 @@
 config = { 
-    'model_name': 'mlp', 
+    'model_name': 'simsiam', 
     'log_path': 'data/log',
     'batch_sizes':  (16, 24, 12),
     'use_inputs':['images'],
     'stream_type': ['visual'], #
     'cache_image_vectors': True,
-    'datasets': 'cifar100',
-    'image_path': 'data/cifar100', #data/cifar10 #data/cifar100
+    'datasets': 'imagenet',
+    'image_path': 'data/imagenet', #data/cifar10 #data/cifar100
     'val_type': 'all', #  'all' | 'ch_only'
     'max_epochs': 100,
     'num_workers': 0, 

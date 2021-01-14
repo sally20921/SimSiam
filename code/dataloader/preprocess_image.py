@@ -32,13 +32,19 @@ def load_imagenet(args):
     normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                      std=[0.229, 0.224, 0.225])
 
+    simsiam_transform = transforms.Compose([
+        transforms.RandomResizedCrop(224, scale=(0,2, 1.0)),
+        transforms.RandomHorizontalFlip(),
+        transforms.RandomApply([transforms.ColorJitter(0.4,0.4,0.4,0.1)], p=0.8),
+        transforms.RandomGrayscale(p=0.2),
+        T.RandomApply([transforms.GaussianBlur(kernel_size=image_size//20*2+1, sigma=(0.1, 2.0))], p=p_blur),
+        transforms.ToTensor(),
+        normalize,
+    ])
+
+
     trainloader = torch.utils.data.DataLoader(
-            datasets.ImageFolder(traindir, transforms.Compose([
-                transforms.RandomResizedCrop(224),
-                transforms.RandomHorizontalFlip(),
-                transforms.ToTensor(),
-                normalize,
-            ])),
+            datasets.ImageFolder(traindir, simsiam_transform),
             batch_size=args.batch_sizes[0], shuffle=args.shuffle[0], num_workers=args.num_workers, pin_memory=True)
 
     valloader = torch.utils.data.DataLoader(
