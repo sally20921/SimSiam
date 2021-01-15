@@ -16,10 +16,23 @@ config = {
     'n_dim': 300,  
     'layers': 3,
     'dropout': 0.5,
-    'learning_rate': 1e-4,
-    'weight_decay': 1e-5,
+    'optimizer': 'larc', # lars
+    'sub_optimizer': 'sgd', # optimizer to wrap lars # sgd # adam # adagrad
+    'learning_rate': 1e-4, # 0.3 x BatchSize / 256
+    'lr_decay': 0, 
+    'weight_decay': 1e-6,
+    'momentum': 0.9,
+    'scheduler': 'simclrlr',
+    'trust_coefficient': 1e-3, # trust coefficient for calculating lr. 
+    'clip': True # clipping/scaling mode of LARC
+    'eps': 1e-8, # epilog klunge to help with numerical stability while calculating adaptive_lr
+    'warm_up': 10, # learning rate schedule
+    'step_size': 0, # for step lr decay
+    'gamma': 0.1, # for step lr decay
+    'cycles': 0.5, # for cosine lr decay
+#    'min_lr': 1e-4,
+#    'last_epoch': -1,
     'loss_name': 'sim_siam_loss',
-    'optimizer': 'adam',
     'metrics': [],
     'log_cmd': True,
     'ckpt_path': 'data/ckpt',

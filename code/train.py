@@ -17,7 +17,7 @@ from ignite.engine.engine import Engine, State, Events
 
 from ckpt import get_model_ckpt, save_ckpt
 from loss import get_loss
-from optimizer import get_optimizer
+from optimizer import get_optimizer, get_scheduler # (args, model) # (args, optimzer)
 from logger import get_logger, log_results, log_results_cmd
 
 from utils import prepare_batch
@@ -41,6 +41,7 @@ def get_trainer(args, model, loss_fn, optimizer):
         loss, stats = loss_fn(y_pred, target)
         loss.backward()
         optimizer.step()
+        # scheduler.step() : this is per epoch operation
         return loss.item(), stats, batch_size, y_pred.detach(), target.detach()
 
 '''
@@ -67,6 +68,7 @@ def train(args):
         print("loaded checkpoint {}".format(args.ckpt_name))
     loss_fn = get_loss(args)
     optimizer = get_optimizer(args, model)
+    scheduler = get_scheduler(args, optimizer)
 
     trainer = get_trainer(args, model, loss_fn, optimizer)
 
@@ -89,6 +91,7 @@ def train(args):
     def evaluate_epoch(engine):
         log_results(logger, 'train.epoch', engine.state, engine.state.epoch)
         state = evaluate_once(evaluator, iterator=iters['val'])
+        scheduler.step() 
         log_results(logger, 'valid/epoch', state, engine.state.epoch)
         log_results_cmd('valid/epoch', state, engine.state.epoch)
         save_ckpt(args, engine.state.epoch, engine.state.metrics['sim_siam_loss'], model)
