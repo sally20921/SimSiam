@@ -6,6 +6,8 @@ from torch.nn.modules.loss import _Loss
 
 from metric.stat_metric import StatMetric
 
+# input could be ((z_1, p_1), (z_2, p_2))
+
 class SimSiamLoss(object):
     def __init__(self):
         super().__init__()

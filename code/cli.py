@@ -54,8 +54,9 @@ class Cli:
         #for batch in iters['train']:
         #    print('Test loading train data')
         #    batch = prepare_batch(args, batch)
-
-        train_iter_test = next(iter(iters['train'])) # take out 1 batch
+        
+        # Get a batch of training data
+        train_iter_test = next(iter(iters['train'])) 
         # see if iteration in train proceeds well
         for (key1, key2), value in train_iter_test.items():
             if isinstance(value, torch.Tensor):

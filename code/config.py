@@ -2,7 +2,7 @@ config = {
     'model_name': 'sim_siam', 
     'log_path': 'data/log',
     'batch_sizes':  (16, 24, 12),
-    'use_inputs':['images'],
+    'use_inputs':['x_i', 'x_j'],
     'stream_type': ['visual'], #
     'cache_image_vectors': True,
     'datasets': 'imagenet',

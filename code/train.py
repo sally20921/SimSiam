@@ -1,3 +1,18 @@
+''' torch.nn.modules.modules 
+class Module:
+    vartype training : bool 
+    def __init__(self):
+        self.training = True
+        self._parameters = OrderedDict()
+
+    def train(self: T, mode:bool = True)
+    # sets the module in training mode. e.g. class: Dropout, class: BatchNorm
+        self.training = mode
+        for module in self.chilren():
+            module.train(mode)
+        return self
+'''
+
 from ignite.engine.engine import Engine, State, Events
 
 from ckpt import get_model_ckpt, save_ckpt
@@ -14,15 +29,26 @@ import numpy as np
 
 def get_trainer(args, model, loss_fn, optimizer):
     def update_model(trainer, batch):
-        model.train()
+        # set model to training mode
+        model.train(True)
         optimizer.zero_grad()
+        # to GPU prepare batch
         net_inputs, target = prepare_batch(args, batch)
+        # **: dictionary into each argument
+        # out : ((z_1, p_1), (z_2, p_2))
         y_pred = model(**net_inputs)
         batch_size = y_pred.shape[0]
         loss, stats = loss_fn(y_pred, target)
         loss.backward()
         optimizer.step()
         return loss.item(), stats, batch_size, y_pred.detach(), target.detach()
+
+'''
+torch.Tensor
+detach() : returns a new Tensor, detached from the current graph. The result will never require a gradient.
+item(): returns a value of this tensor as a standard Python number . This only works for tensors with one element. 
+'''
+        
 
     trainer = Engine(update_model)
 
