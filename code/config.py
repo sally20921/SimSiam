@@ -3,6 +3,8 @@ config = {
     'log_path': 'data/log',
     'batch_sizes':  (16, 24, 12),
     'use_inputs':['x_i', 'x_j'],
+    'use_outputs': ['p_i', 'p_j', 'z_i', 'z_j'],
+    'loss_metric': 'none' # mean # sum
     'stream_type': ['visual'], #
     'cache_image_vectors': True,
     'datasets': 'imagenet',

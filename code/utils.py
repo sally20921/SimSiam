@@ -52,7 +52,7 @@ view() cannot be applied to discontiguous tensor.
 # batch: (x_i, x_j), target
 def prepare_batch(args, batch):
     net_input_key = [*args.use_inputs]
-    net_input = {k: batch[0][i] for k, i in zip(net_input_key, range(net_input_key))}
+    net_input = {k: batch[0][i] for k, i in zip(net_input_key, range(len(net_input_key)))}
     for key, value in net_input.items():
         if torch.is_tensor(value):
             net_input[key] = value.to(args.device).contiguous()

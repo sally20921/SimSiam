@@ -35,9 +35,9 @@ def get_trainer(args, model, loss_fn, optimizer):
         # to GPU prepare batch
         net_inputs, target = prepare_batch(args, batch)
         # **: dictionary into each argument
-        # out : ((z_1, p_1), (z_2, p_2))
+        # y_pred : dict {z_i, z_j, p_i, p_j}
         y_pred = model(**net_inputs)
-        batch_size = y_pred.shape[0]
+        batch_size = target.shape[0] # N
         loss, stats = loss_fn(y_pred, target)
         loss.backward()
         optimizer.step()
@@ -48,14 +48,9 @@ torch.Tensor
 detach() : returns a new Tensor, detached from the current graph. The result will never require a gradient.
 item(): returns a value of this tensor as a standard Python number . This only works for tensors with one element. 
 '''
-        
-
     trainer = Engine(update_model)
 
-    metrics = {
-        'loss': StatMetric(output_transform=lambda x: (x[0], x[2])),
-        'top1_acc':StatMetric(output_transform=lambda x: ((x[3].argmax(dim=-1) == x[4]).float().mean().item(), x[2]))
-    }
+    metrics = {} # loss is same as simsiam_loss 
 
     if hasattr(loss_fn, 'get_metric'):
         metrics = {**metrics, **loss_fn.get_metric()}

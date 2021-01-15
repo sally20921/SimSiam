@@ -74,7 +74,7 @@ class Prediction(nn.Module):
 
 
 def SimSiam(nn.Module):
-    def __init__(self):
+    def __init__(self, use_outputs):
         super(SimSiam, self).__init__()
 
         self.backbone = resnet50()
@@ -85,14 +85,16 @@ def SimSiam(nn.Module):
                 self.projector
         )
         self.predictor = Prediction()
+
+        self.net_output_key = use_outputs
     
     @classmethod
     def resolve_args(cls, args):
-        return cls(args)
-
+        return cls(args, args.use_outputs)
+    
     def forward(self, x_1, x_2):
         f, h = self.encoder, self.predictor
-        z_1, z_2 = f(x_1), f(x_2)
-        p_1, p_2 = h(z_1), h(z_2)
-
-        return ((z_1, p_1), (z_2, p_2))
+        z_i, z_j = f(x_1), f(x_2)
+        p_i, p_j = h(z_1), h(z_2)
+        {key: eval(key) for key in self.net_output_key}
+        return y_pred
