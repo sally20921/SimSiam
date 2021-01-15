@@ -74,8 +74,25 @@ def train(args):
     evaluator = get_evaluator(args, model, loss_fn, metrics)
 
     logger = get_logger(args)
+    
+    @trainer.on(Events.STARTED)
+    def on_training_started(engine):
+        print("Begin Training")
+    
+    # log batch-wise
+    @trainer.on(Events.ITERATION_COMPLETED)
+    def log_iter_results(engine):
+        log_results(logger, 'train/iter', engine.state, engine.state.iteration)
+    
+    # epoch-wise valid eval + ckpt
+    @trainer.on(Events.EPOCH_COMPLETED)
+    def evaluate_epoch(engine):
+        log_results(logger, 'train.epoch', engine.state, engine.state.epoch)
+        state = evaluate_once(evaluator, iterator=iters['val'])
+        log_results(logger, 'valid/epoch', state, engine.state.epoch)
+        log_results_cmd('valid/epoch', state, engine.state.epoch)
+        save_ckpt(args, engine.state.epoch, engine.state.metrics['sim_siam_loss'], model)
 
-
-    trainer.run(iters['train']), max_epochs=args.max_epochs)
+    trainer.run(iters['train']), max_epochs=args.max_epoch)
 
 
