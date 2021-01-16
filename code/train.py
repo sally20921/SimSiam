@@ -17,7 +17,7 @@ from ignite.engine.engine import Engine, State, Events
 
 from ckpt import get_model_ckpt, save_ckpt
 from loss import get_loss
-from optimizer import get_optimizer, get_scheduler # (args, model) # (args, optimzer)
+from optimizer import get_sub_optimizer, get_optimizer, get_scheduler # (args, model) # (args, optimizer) # (args, optimizer)
 from logger import get_logger, log_results, log_results_cmd
 
 from utils import prepare_batch
@@ -67,7 +67,8 @@ def train(args):
     if ckpt_available:
         print("loaded checkpoint {}".format(args.ckpt_name))
     loss_fn = get_loss(args)
-    optimizer = get_optimizer(args, model)
+    sub_optimizer = get_sub_optimizer(args, model)
+    optimizer = get_optimizer(args, sub_optimizer)
     scheduler = get_scheduler(args, optimizer)
 
     trainer = get_trainer(args, model, loss_fn, optimizer)

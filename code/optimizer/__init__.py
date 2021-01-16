@@ -21,9 +21,15 @@ def add_optims():
                 if hasattr(member, "__bases__") and ((optim.Optimizer in member.__bases__ or optim.lr_scheduler._LRScheduler in member.__bases__) or (optim.Optimizer in member.__bases__[0].__bases__ or optim.lr_scheduler._LRScheduler in member.__bases[0].__bases__)):
                     optim_dict[underscore(str(member.__name__))] = member
 
-def get_optimizer(args, model):
+def get_sub_optimizer(args, model):
+    sub_optim = optim_dict[args.sub_optimizer]
+    sub_optim = sub_optim.resolve_args(args, model.parameters())
+    sub_optim.zero_grad()
+    return sub_optim
+
+def get_optimizer(args, sub_optimizer):
     optim = optim_dict[args.optimizer]
-    optim = optim.resolve_args(args, model.parameters())
+    optim = optim.resolve_args(args, sub_optimizer)
     optim.zero_grad()
     return optim
 

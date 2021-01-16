@@ -16,7 +16,7 @@ config = {
     'n_dim': 300,  
     'layers': 3,
     'dropout': 0.5,
-    'optimizer': 'larc', # lars
+    'optimizer': 'larc', # lars 
     'sub_optimizer': 'sgd', # optimizer to wrap lars # sgd # adam # adagrad
     'learning_rate': 1e-4, # 0.3 x BatchSize / 256
     'lr_decay': 0, 
@@ -32,6 +32,7 @@ config = {
     'cycles': 0.5, # for cosine lr decay
 #    'min_lr': 1e-4,
 #    'last_epoch': -1,
+    'clip': True, # for larc optimizer
     'loss_name': 'sim_siam_loss',
     'metrics': [],
     'log_cmd': True,
