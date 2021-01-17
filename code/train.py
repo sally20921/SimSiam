@@ -51,7 +51,10 @@ item(): returns a value of this tensor as a standard Python number . This only w
 '''
     trainer = Engine(update_model)
 
-    metrics = {} # loss is same as simsiam_loss 
+    metrics = {
+        'Accuracy': Accuracy(),
+        'Top-5 Accuracy': TopKCategoricalAccuracy(k=5),
+            } # loss is same as simsiam_loss 
 
     if hasattr(loss_fn, 'get_metric'):
         metrics = {**metrics, **loss_fn.get_metric()}

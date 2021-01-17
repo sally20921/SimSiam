@@ -1,4 +1,9 @@
 # Exploring Simple Siamese Representation Learning
+## Notes
+
+- I found that using SimCLR augmentation directly will sometimes cause the model to collpase. This maybe due to the fact that SimCLR augmentation is too strong.
+- Adopting the MoCo augmentation during the warmup stage helps.
+
 ## Dataset
 ```
 data/
@@ -88,7 +93,7 @@ python3 cli.py train
 ```
 cd code
 python3 cli.py evaluate --ckpt_name=$CKPT_NAME
-````
+```
 - Substitute CKPT_NAME to your preferred checkpoint file, e.g., `ckpt_name=model_name_simclr_ckpt_3/loss_0.4818_epoch_15`
 ## Results
 
