@@ -51,8 +51,14 @@ item(): returns a value of this tensor as a standard Python number . This only w
 '''
     trainer = Engine(update_model)
 
+    def output_transform(output):
+        # `output` variable is returned by above `update_model`
+        y_pred = output[3]
+        y = ouput[4]
+        return y_pred, y # output fromat is according to `Accuracy` docs
+
     metrics = {
-        'Accuracy': Accuracy(),
+        'Accuracy': Accuracy(output_transform=output_transform),
         'Top-5 Accuracy': TopKCategoricalAccuracy(k=5),
             } # loss is same as simsiam_loss 
 
