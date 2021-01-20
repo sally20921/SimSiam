@@ -41,7 +41,13 @@ data/
       n021015557/
       ...
 ```
-## Model
+## Stages
+### Pretraining
+### Linear Evaluation Protocol
+### Semi-Supervised Learning
+use imagenet subset from https://github.com/tensorflow/datasets/tree/master/tensorflow_datasets/image_classification
+
+### Transfer Learning
 ## Dependency
 - I use python3 (3.5.2) and python2 is not supported. 
 - I use PyTorch (1.1.0), though tensorflow-gpu is necessary to launch tensorboard.

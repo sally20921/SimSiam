@@ -1,7 +1,3 @@
-'''
-freeze the encoder and train the supervised classification head with a cross entropy loss
-'''
-
 import os
 import torch
 import torch.nn as nn
@@ -27,11 +23,20 @@ from metric.stat_metric import StatMetric, KNNMonitor
 from ignite.metrics import Accuracy, TopKCategoricalAccuracy
 import numpy as np
 
+import tensorflow_datasets as tfds
+import tensorflow as tf
 
+ds = tfds.load('imagenet2012_subset', split='train', as_supervised=True, shuffle_files=True)
+ds = ds.shuffle(1000).batch(128).prefetch(10).take(5)
+for image, label in ds:
+    pass
 ''' 
-transfer learning where we allow all weights to vary during training
-'''
+sample 1% or 10% of labeled ILSVRC-12 trainiing datasets in a class-balanced way.
+for 1% labeled data we finetune for 60 epochs, 10% 30 epochs.
+simply fine-tune the whole base network on the labeled data wihtout regularization.
+Interestingly, fine-tuning our pretrained ResNet-50 on full ImageNet are significantly better than training from scratch. 
 
+'''
 def get_trainer(args, model, loss_fn, optimizer):
     def update_model(trainer, batch):
         model.train()

@@ -14,7 +14,7 @@ from torchvision.transforms import GaussianBlur
 
 from utils import *
 
-dataset_types = ['mnist', 'stl10', 'cifar10', 'cifar100', 'imagenet', 'random']
+dataset_types = ['tinyimagenet','mnist', 'stl10', 'cifar10', 'cifar100', 'imagenet', 'random']
 imagenet_norm = [[0.485, 0.456, 0.406],[0.229, 0.224, 0.225]]
 cifar_norm = [[0.4914, 0.4822, 0.4465],[0.2023, 0.1994, 0.2010]]
 
@@ -41,6 +41,16 @@ def get_dataset(args, train_transform, val_transform):
         valdir = os.path.join(args.image_path, 'val')
         trainloader = torchvision.datasets.ImageFolder(traindir, transform=train_transform)
         valloader = torchvision.datasets.ImageFolder(valdir, transform=val_transform)
+    elif args.dataset == "tinyimagenet":
+        '''
+        imagenet2012subset is a subset of original imagenet dataset.
+        The dataset share the same validation set as the original.
+        The training set is subsampled in a label balanced fashion.
+        This dataset requires you to download the source data manually.
+        manual_dir should contain two files: ILSVRC2012_img_train.tar 
+        and ILSVRC2012_img_val.tar
+        http://www.image-net.org/download-images
+        '''
     else:
         raise NotImplementedError
 
