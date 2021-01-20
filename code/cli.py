@@ -3,11 +3,12 @@ import random
 
 from fire import Fire
 from munch import Munch
+# A Munch is a Python dictionary that provides attribute-style access
 
 import torch
 import numpy as np
 
-from config import config, debug_options
+from config import pretrain, linear_eval, fine_tune
 from dataloader.load_dataset import get_dataset
 from dataloader import get_aug
 from utils import wait_for_key, suppress_stdout
@@ -17,25 +18,26 @@ from train import train
 
 class Cli:
     def __init__(self):
-        self.defaults = config
+        self.pretrain = pretrain
+        self.linear_eval = linear_eval
+        self.fine_tune = fine_tune
         self.debug = debug_options
 
-    # update arguments if any argument was given from command
     def _default_args(self, **kwargs):
-        args = self.defaults
-        if 'debug' in kwargs:
-            args.update(self.debug)
-        args.update(kwargs)
-        
-        #update arguments to its absolute path
-        args.update(resolve_paths(config))
-        args.update(fix_seed(args))
-        args.update(get_device(args))
-        
-        # at the end, print all the updated arguments
-        print(args)
+        args = [self.pretrain, self.linear_eval, self.fine_tune]
+        for arg in args:
+            # update arguments if any argument was given from command
+            args.update(kwargs)
 
-        return Munch(args)
+            # update arguments to its absolute path
+            args.update(resolve_paths(arg))
+            args.update(fix_seed(arg))
+            args.update(get_device(arg))
+
+            # at the end, print all the args
+            print(arg)
+
+        return Munch(self.pretrain), Munch(self.linear_eval), Munch(self.fine_tune)
 
     # the most important part, checking dataloader dir
     def check_dataloader(self, **kwargs):
@@ -44,28 +46,21 @@ class Cli:
         from tqdm import tqdm 
         print("check_dataloader")
 
-        args = self._default_args(**kwargs) 
-        train_aug = get_aug(args=args, train=True, double=True)
-        val_aug = get_aug(args=args, train=True, double=False)
-        pretrain_iters = get_dataset(args, train_aug, val_aug)
+        pretrain, linear_eval, fine_tune = self._default_args(**kwargs) 
+        ptaug = get_aug(args=args, train=True, double=True)
+        pvaug = get_aug(args=args, train=True, double=False)
+        pretrain_iters = get_dataset(args, ptaug, pvaug)
 
-        t_aug = get_aug(args, True, False)
-        v_aug = get_aug(args, False, False)
-        linear_iters = get_dataset(args, t_aug, v_aug)
+        ltaug = get_aug(args, True, False)
+        lvaug = get_aug(args, False, False)
+        linear_iters = get_dataset(args, ltaug, lvaug)
 
+        ftaug = get_aug(args, True, False)
+        fvaug = get_aug(args, False, False)
+        fine_tune = get_dataset(args, ftaug, fvaug)
 
-        #print(iters['train'])
-
-        #for batch_idx, (inputs, targets) in enumerate(iters['train']):
-        #    print("{}:({},{})".format(batch_idx, inputs.shape, targets.shape))
-        #    106:(torch.Size([16, 3, 224, 224]),torch.Size([16]))
-
-        #for batch in iters['train']:
-        #    print('Test loading train data')
-        #    batch = prepare_batch(args, batch)
-        
         # Get a batch of training data
-        train_iter_test = next(iter(iters['train'])) 
+        train_iter_test = next(iter(pretrain_iters['train'])) 
         # see if iteration in train proceeds well
         for (key1, key2), value in train_iter_test.items():
             if isinstance(value, torch.Tensor):
@@ -73,30 +68,27 @@ class Cli:
             else:
                 print(key1, key2, value)
         
-        #print("test loading val data")
-        #for batch_idx, batch in tqdm(iters['val']):
-        #    batch = prepare_batch(args, batch)
-
         #for mode in modes:
         #    print('Test loading %s data' % mode)
-        #    for batch_idx, batch in tqdm(iters[mode]):
+        #    for batch_idx, batch in tqdm(pretrain_iters[mode]):
         #    #    import ipdb; ipdb.set_trace() # XXX DEBUG
         #        batch = prepare_batch(args, batch)
 
     def pretrain(self, **kwargs):
-        args = self._default_args(**kwargs)
+        args, _, _ = self._default_args(**kwargs)
         train(args)
         wait_for_key()
 
     def linear_eval(self, **kwargs):
-        args = self._default_args(**kwargs)
+        _, args, _ = self._default_args(**kwargs)
         linear_eval(args)
         wait_for_key()
 
     def fine_tune(self, **kwargs):
-        args = self._default_args(**kwargs)
+        _, _, args = self._default_args(**kwargs)
         fine_tune(args)
         wait_for_key()
+
 def resolve_paths(config):
     paths = [k for k in config.keys() if k.endswith('_path')]
     res  = {}
