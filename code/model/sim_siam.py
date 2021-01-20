@@ -91,7 +91,7 @@ def SimSiam(nn.Module):
     @classmethod
     def resolve_args(cls, args):
         return cls(args, args.use_outputs)
-    
+
     def forward(self, x_1, x_2):
         f, h = self.encoder, self.predictor
         z_i, z_j = f(x_1), f(x_2)

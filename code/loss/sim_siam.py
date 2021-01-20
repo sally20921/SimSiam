@@ -15,9 +15,9 @@ class SimSiamLoss(object):
         self.net_output_key = use_outputs
         self.reduction = loss_metric
 
-    @staticmethod
-    def get_metric():
-        return {'sim_siam_loss': StatMetric(output_transform=lambda x: x[1]['sim_siam_loss'], x[2])} # loss.item(), batch_size
+#    @staticmethod
+#    def get_metric():
+#        return {'sim_siam_loss': StatMetric(output_transform=lambda x: x[1]['sim_siam_loss'], x[2])} # loss.item(), batch_size
 
     def _loss(p,z):
         z = z.detach() # stop gradient
@@ -34,7 +34,7 @@ class SimSiamLoss(object):
         p_i, p_j, z_i, z_j = (v for k, v in sorted(y_pred.items()))
         loss = _loss(p_i,z_j) / 2 + _loss(p_j, z_i) / 2
         loss = self._reduce(loss) 
-        return loss, {'sim_siam_loss': loss.item()} # tensor, {'':python number} 
+        return loss # {'sim_siam_loss': loss.item()} # tensor, {'':python number} 
 
     # mean or sum torch.Tensor t into one element tensor
     # if loss is not one element

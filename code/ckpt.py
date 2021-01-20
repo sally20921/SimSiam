@@ -4,7 +4,8 @@ import torch, pickle
 from torch import nn
 import torch.nn.functional as F
 
-from dataloader.load_dataset import get_iterator
+from dataloader import get_aug
+from dataloader.load_dataset import get_dataset
 from model import get_model
 from utils import get_dirname_from_args
 
@@ -64,9 +65,7 @@ def get_model_ckpt(args):
 
         # 1. first update the arguments
         args.update(dt['args'])
-
-    iters = get_iterator(args)
-    # which iterator are we on
+    
     # 2. get model based on the arguments
     model = get_model(args)
 
@@ -74,7 +73,7 @@ def get_model_ckpt(args):
         model.load_state_dict(dt['model'])
         # load other state in the model 
 
-    return args, model, iters, ckpt_available
+    return args, model, ckpt_available
 
 def get_classifier(args, model):
     classifier = nn.Linear(in_features=model.output_dim, out_features=10, bias=True).to(args.device)

@@ -1,7 +1,3 @@
-'''
-freeze the encoder and train the supervised classification head with a cross entropy loss
-'''
-
 import os
 import torch
 import torch.nn as nn
@@ -24,23 +20,41 @@ from logger import get_logger, log_results, log_results_cmd
 from utils import prepare_batch
 from metric import get_metrics
 from metric.stat_metric import StatMetric, KNNMonitor
-from ignite.metrics import Accuracy, TopKCategoricalAccuracy, Loss
+from ignite.metrics import Accuracy, TopKCategoricalAccuracy
 import numpy as np
 
+def get_dataloader(args, pretrain_model, train_loader, test_loader):
+    train_x, train_y = compute_features(args, train_loader, pretrain_model)
+    test_x, test_y = compute_features(args, test_loader, pretrain_model)
 
-''' 
-transfer learning where we allow all weights to vary during training
-'''
+    train_dataset = torch.utils.data.TensorDataset(torch.from_numpy(x_train), torch.from_numpy(y_train))
+    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size[0], shuffle=args.shuffle[0])
 
-'''
-ignite.metrics.TopKCategoricalAccuracy(k=5, output_transfrom, device)
- calculates the top-k categorical accuarcy
- `update` must reive output `(y_pred, y)` or dict
-'''
-def get_trainer(args, model, loss_fn, optimizer, scheduler):
+    test_dataset = torch.utils.data.TensorDataset(torch.from_numpy(x_test), torch.from_numpy(y_test))
+    test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=args.batch_size[1], shuffle=args.shuffle[1]))
+
+    return train_loader, test_loader
+
+def compute_features(args, loader, pt_model):
+    features = []
+    labels = []
+
+    for step, batch in enumerate(loader):
+        x, y = _prepare_batch(args, batch)
+        with torch.no_grad():
+            y_pred = pt_model(x)
+        
+        h = y_pred['h'].detach()
+
+        features.extend(h.cpu().detach().numpy())
+        labels.extend(y.numpy())
+
+    features = np.array(features)
+    labels = np.array(labels)
+
+def get_trainer(args, model, loss_fn, optimizer):
     def update_model(trainer, batch):
-        model.encoder.eval()
-        model.mlp.train()
+        model.train()
         optimizer.zero_grad()
 
         # to gpu
@@ -53,7 +67,6 @@ def get_trainer(args, model, loss_fn, optimizer, scheduler):
         
         loss.backward()
         optimizer.step()
-        scheduler.step()
         
         return loss.item(), batch_size, y_pred.detach(), target.detach()
 
@@ -73,10 +86,7 @@ def get_evaluator(args, model, loss_fn, metrics={}):
     def _inference(evaluator, batch):
         nonlocal sample_count
         
-        model.encoder.eval()
-        model.mlp.eval()
-        model.encoder.zero_grad()
-
+        model.eval()
         with torch.no_grad():
             net_inputs, target = prepare_batch(args, batch)
             y_pred = model(**net_inputs)
@@ -86,18 +96,10 @@ def get_evaluator(args, model, loss_fn, metrics={}):
             return loss.item(), batch_size, y_pred, target
 
         engine= Engine(_inference)
-'''
-ignite.metrics.loss(loss_fn, output_transform, batch_size, device)
- loss_fn : taking a prediction tensor, a target tensor and returns the average loss over all observations in the batch
- output_transform: is expected to be a tuple (prediction, target)
-'''
 
         metrics = {**metrics, **{
-            'loss': Loss(loss_fn, ouput_transform=lambda x: (x[2], x[3])),
+            'loss': StatMetric(ouput_transform=lambda x: (x[0], x[1])),
             'top1_acc': Accuracy(output_transform=lambda x: (x[2], x[3])),
-            'top5_acc': TopKCategoricalAccuracy(k=5, output_transform=lambda x:(x[2], x[3])),
-            # target.view(-1,1).expand_as(k).sum().item() / batch_size 
-            # num_corrects
         }}
 
         for name, metric in metrics.items():
@@ -109,23 +111,26 @@ def evaluate_once(evaluator, iterator):
     evaluator.run(iterator)
     return evaluator.state
 
-def linear_evaluation(pretrain, args):
+def logistic_regression(pretrain, args):
     # get pretrained models
     args, pt_model, ckpt_available = get_model_ckpt(pretrain)
+    pt_model.eval()
 
     taug = get_aug(args=args, train=True, double=False)
     vaug = get_aug(args=args, train=False, double=False)
-    linear_iters = get_dataset(args, taug, vaug)
-    
+    log_iters = get_dataset(args, taug, vaug)
+    log_iters = get_dataloader(args, pt_model, log_iters['train'], log_iters['test'])
+
     if ckpt_available:
         print("loaded checkpoint {}".format(args.ckpt_name))
     
-    model = get_model(args, pt_model, args.num_classes)
+    model = get_model(args, pt_model.num_features, args.num_classes)
     loss_fn = get_loss(args)
     optimizer = get_sub_optimizer(args, model)
-    scheduler = get_scheduler(args, optimizer)
+    
+    # create features from pretrained model
 
-    trainer = get_trainer(args, model, loss_fn, optimizer, scheduler)
+    trainer = get_trainer(args, model, loss_fn, optimizer)
     evaluator = get_evaluator(args, model, loss_fn)
 
     metrics = get_metrics(args)

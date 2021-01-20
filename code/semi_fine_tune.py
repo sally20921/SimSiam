@@ -24,7 +24,7 @@ from logger import get_logger, log_results, log_results_cmd
 from utils import prepare_batch
 from metric import get_metrics
 from metric.stat_metric import StatMetric, KNNMonitor
-from ignite.metrics import Accuracy, TopKCategoricalAccuracy, Loss
+from ignite.metrics import Accuracy, TopKCategoricalAccuracy
 import numpy as np
 
 
@@ -32,15 +32,9 @@ import numpy as np
 transfer learning where we allow all weights to vary during training
 '''
 
-'''
-ignite.metrics.TopKCategoricalAccuracy(k=5, output_transfrom, device)
- calculates the top-k categorical accuarcy
- `update` must reive output `(y_pred, y)` or dict
-'''
-def get_trainer(args, model, loss_fn, optimizer, scheduler):
+def get_trainer(args, model, loss_fn, optimizer):
     def update_model(trainer, batch):
-        model.encoder.eval()
-        model.mlp.train()
+        model.train()
         optimizer.zero_grad()
 
         # to gpu
@@ -53,7 +47,6 @@ def get_trainer(args, model, loss_fn, optimizer, scheduler):
         
         loss.backward()
         optimizer.step()
-        scheduler.step()
         
         return loss.item(), batch_size, y_pred.detach(), target.detach()
 
@@ -73,10 +66,7 @@ def get_evaluator(args, model, loss_fn, metrics={}):
     def _inference(evaluator, batch):
         nonlocal sample_count
         
-        model.encoder.eval()
-        model.mlp.eval()
-        model.encoder.zero_grad()
-
+        model.eval()
         with torch.no_grad():
             net_inputs, target = prepare_batch(args, batch)
             y_pred = model(**net_inputs)
@@ -86,18 +76,10 @@ def get_evaluator(args, model, loss_fn, metrics={}):
             return loss.item(), batch_size, y_pred, target
 
         engine= Engine(_inference)
-'''
-ignite.metrics.loss(loss_fn, output_transform, batch_size, device)
- loss_fn : taking a prediction tensor, a target tensor and returns the average loss over all observations in the batch
- output_transform: is expected to be a tuple (prediction, target)
-'''
 
         metrics = {**metrics, **{
-            'loss': Loss(loss_fn, ouput_transform=lambda x: (x[2], x[3])),
+            'loss': StatMetric(ouput_transform=lambda x: (x[0], x[1])),
             'top1_acc': Accuracy(output_transform=lambda x: (x[2], x[3])),
-            'top5_acc': TopKCategoricalAccuracy(k=5, output_transform=lambda x:(x[2], x[3])),
-            # target.view(-1,1).expand_as(k).sum().item() / batch_size 
-            # num_corrects
         }}
 
         for name, metric in metrics.items():
@@ -125,7 +107,7 @@ def linear_evaluation(pretrain, args):
     optimizer = get_sub_optimizer(args, model)
     scheduler = get_scheduler(args, optimizer)
 
-    trainer = get_trainer(args, model, loss_fn, optimizer, scheduler)
+    trainer = get_trainer(args, model, loss_fn, optimizer)
     evaluator = get_evaluator(args, model, loss_fn)
 
     metrics = get_metrics(args)

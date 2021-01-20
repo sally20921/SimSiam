@@ -39,12 +39,12 @@ def get_trainer(args, model, loss_fn, optimizer):
         # y_pred : dict {z_i, z_j, p_i, p_j}
         y_pred = model(**net_inputs)
         batch_size = target.shape[0] # N
-        loss, stats = loss_fn(y_pred)
+        loss = loss_fn(y_pred)
         loss = loss.mean() # differential dynamic programming
         loss.backward()
         optimizer.step()
         scheduler.step() 
-        return loss.item(), stats, batch_size, y_pred.detach()
+        return loss.item(), batch_size, y_pred.detach()
 
 '''
 torch.Tensor

@@ -80,13 +80,18 @@ class Cli:
         wait_for_key()
 
     def linear_eval(self, **kwargs):
-        _, args, _ = self._default_args(**kwargs)
-        linear_eval(args)
+        pretrain, args, _ = self._default_args(**kwargs)
+        linear_eval(pretrain, args)
         wait_for_key()
 
     def fine_tune(self, **kwargs):
-        _, _, args = self._default_args(**kwargs)
-        fine_tune(args)
+        pretrain, _, args = self._default_args(**kwargs)
+        fine_tune(pretrain, args)
+        wait_for_key()
+
+    def logistic_regression(self, **kwargs):
+        pretrain, _, args = self._default_args(**kwargs)
+        logistic_regression(pretrain, args)
         wait_for_key()
 
 def resolve_paths(config):
