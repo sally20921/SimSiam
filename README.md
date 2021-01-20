@@ -1,4 +1,20 @@
 # Exploring Simple Siamese Representation Learning
+## Install Package
+`
+pip3 install SOTA-SSL
+`
+
+## Usage
+```
+import torch
+from SOTA_SSL_Models import SimSiam
+from torchvision import models
+
+
+model = SimSiam(args)
+
+```
+
 ## Notes
 
 - I found that using SimCLR augmentation directly will sometimes cause the model to collpase. This maybe due to the fact that SimCLR augmentation is too strong.
