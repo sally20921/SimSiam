@@ -22,7 +22,15 @@ def underscore(word):
     print(word.lower())
 
 if __name__ == "__main__":
-    data = "SimSiam"
+    data = "KNNMonitor"
+    data2 = "SimclrLR"
+    data3 = "MNISTDataset"
+    data4 = "STL10Dataset"
+    data5 = "CIFAR100Dataset"
+    print(underscore(data5))
+    print(underscore(data3))
+    print(underscore(data4))
+    print(underscore(data2))
     print(underscore(data))
 
 

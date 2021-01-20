@@ -29,9 +29,11 @@ def get_evaluator(args, model, loss_fn, metrics={}):
         nonlocal sample_count
 
         model.eval()
+        classifier.train()
         with torch.no_grad():
             net_inputs, target = prepare_batch(args, batch)
-            y_pred = model(**net_inputs)
+            feature = model(**net_inputs)
+            y_pred = classifier(feature)
             batch_size = y_pred.shape[0]
             loss, stats = loss_fn(y_pred, target)
 
@@ -51,20 +53,19 @@ def get_evaluator(args, model, loss_fn, metrics={}):
 
     return engine
 
-def evaluate_once(evaluator, iterator):
-    evaluator.run(iterator)
-    return evaluator.state
 
 def evaluate(args):
-    args, model, iters, ckpt_available = get_model_ckpt(args)
     print(args)
-    if ckpt_available:
-        print("loaded checkpoint {}".format(args.ckpt_name))
     transforms = get_aug(args)
     train_loader, test_loader = get_dataset(args, transforms)
+    
+    _, model, iters, ckpt_available = get_model_ckpt(args)
+    classifier = get_classifier(args, model)
 
     loss_fn = get_loss(args)
-    
+    optimizer = get_optimizer(args)
+    scheduler = get_scheduler(args, optimizer)
+
     metrics = get_metrics(args)
     evaluator = get_evaluator(args, model, loss_fn, metrics)
 

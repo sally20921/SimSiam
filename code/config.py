@@ -1,4 +1,7 @@
-config = { 
+config = {
+    'distributed': False,
+    'stage': 'pretrain', # linear_eval
+    'transforms': 'sim_siam_transform',
     'model_name': 'sim_siam', 
     'log_path': 'data/log',
     'batch_sizes':  (16, 24, 12),
@@ -7,7 +10,7 @@ config = {
     'loss_metric': 'none' # mean # sum
     'stream_type': ['visual'], #
     'cache_image_vectors': True,
-    'datasets': 'imagenet',
+    'datasets': 'image_net_dataset', #mnist_dataset # stl10_dataset #cifar10_dataset # cifar100_dataset
     'image_path': 'data/imagenet', #data/cifar10 #data/cifar100
     'val_type': 'all', #  'all' | 'ch_only'
     'max_epochs': 100,
@@ -22,7 +25,8 @@ config = {
     'lr_decay': 0, 
     'weight_decay': 1e-6,
     'momentum': 0.9,
-    'scheduler': 'simclrlr',
+    'pretrain_scheduler': 'simclr_lr',
+    'linear_eval_scheduler': 'step_lr',
     'trust_coefficient': 1e-3, # trust coefficient for calculating lr. 
     'clip': True # clipping/scaling mode of LARC
     'eps': 1e-8, # epilog klunge to help with numerical stability while calculating adaptive_lr
@@ -34,6 +38,7 @@ config = {
 #    'last_epoch': -1,
     'clip': True, # for larc optimizer
     'loss_name': 'sim_siam_loss',
+    'eval_loss_name': 'cross_entropy_loss',
     'metrics': [],
     'log_cmd': True,
     'ckpt_path': 'data/ckpt',

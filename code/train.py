@@ -23,7 +23,8 @@ from logger import get_logger, log_results, log_results_cmd
 from utils import prepare_batch
 from metric import get_metrics
 from evaluate import get_evaluator, evaluate_once
-from metric.stat_metric import StatMetric
+from ignite.metrics import Accuracy, TopKCategoricalAccuracy
+from metric.stat_metric import StatMetric, KNNMonitor
 
 import numpy as np
 
@@ -38,11 +39,12 @@ def get_trainer(args, model, loss_fn, optimizer):
         # y_pred : dict {z_i, z_j, p_i, p_j}
         y_pred = model(**net_inputs)
         batch_size = target.shape[0] # N
-        loss, stats = loss_fn(y_pred, target)
+        loss, stats = loss_fn(y_pred)
+        loss = loss.mean() # differential dynamic programming
         loss.backward()
         optimizer.step()
-        # scheduler.step() : this is per epoch operation
-        return loss.item(), stats, batch_size, y_pred.detach(), target.detach()
+        scheduler.step() 
+        return loss.item(), stats, batch_size, y_pred.detach()
 
 '''
 torch.Tensor
@@ -50,15 +52,23 @@ detach() : returns a new Tensor, detached from the current graph. The result wil
 item(): returns a value of this tensor as a standard Python number . This only works for tensors with one element. 
 '''
     trainer = Engine(update_model)
-
-    def output_transform(output):
-        # `output` variable is returned by above `update_model`
-        y_pred = output[3]
-        y = ouput[4]
-        return y_pred, y # output fromat is according to `Accuracy` docs
-
+   
+    '''
+    ignite.metrics.Accuracy(output_transform: Callable = <function Accuracy.<lambda>>, is_multilabel: bool = False, device=Optional[Union[str, torch.device]]=None)
+    # calculates the accuracy for binary, multiclass and multilabel data
+    # `update` must receive output of the form `(y_pred, y)` or `{'y_pred': y_pred, 'y': y}
+    # `y_pred` must be in the following shape (batch_size, num_categories, ...) or (batch_size, ...)
+    # `y` must be in the following shape (batch_size, ...)
+    # `y` and `y_pred` must be in the following shape of (batch_size, num_categories, ...) and  `num_categories` must be greater than 1 for multilabel cases.
+    # In binary and multilabel cases, the elements of `y` and `y_pred` should have 0 or 1 values.
+    def thresholded_output_transform(output):
+        y_pred, y = output
+        y_pred = torch.round(y_pred)
+        return y_pred, y
+    binary_accuracy = Accuracy(threshold_output_transform)
+'''
     metrics = {
-        'Accuracy': Accuracy(output_transform=output_transform),
+        'Accuracy': KNNMonitor(output_transform=lambda x:x[3]),
         'Top-5 Accuracy': TopKCategoricalAccuracy(k=5),
             } # loss is same as simsiam_loss 
 
@@ -101,7 +111,6 @@ def train(args):
     def evaluate_epoch(engine):
         log_results(logger, 'train.epoch', engine.state, engine.state.epoch)
         state = evaluate_once(evaluator, iterator=iters['val'])
-        scheduler.step() 
         log_results(logger, 'valid/epoch', state, engine.state.epoch)
         log_results_cmd('valid/epoch', state, engine.state.epoch)
         save_ckpt(args, engine.state.epoch, engine.state.metrics['sim_siam_loss'], model)

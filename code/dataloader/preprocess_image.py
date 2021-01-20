@@ -31,6 +31,8 @@ Args:
     transform (callable, optional) - A function/transform that takes in an PIL image and returns a transformed version.
     target_transform (callable, optional) - A function/transform that takes in the target and transforms it.
 '''
+
+
 #----------------------CIFAR----------------------------------------#
 mean_std = transforms.Normalize(mean=[0.4914, 0.4822, 0.4465], std=[0.2023, 0.1994, 0.2010])
 

@@ -75,4 +75,9 @@ def get_model_ckpt(args):
         # load other state in the model 
 
     return args, model, iters, ckpt_available
-        
+
+def get_classifier(args, model):
+    classifier = nn.Linear(in_features=model.output_dim, out_features=10, bias=True).to(args.device)
+    #if args.distributed:
+    #    classifier = torch.nn.SyncBatchNorm.convert_sync_batchnorm(classifier)
+    return classifier

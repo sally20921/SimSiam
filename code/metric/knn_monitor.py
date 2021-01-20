@@ -1,41 +1,37 @@
 '''
-class Metric(metaclass=ABCMeta):
-    def __init__(self, output_transform: Callable = lambda x: x,
-    device=None):
-        self._output_transform = output_transform
-        self._device = device
-        self._is_reduced = False
-        self.reset()
+from "Unsupervised feature learning via non-parametric instance discrimination"
 '''
 
-""" computes and stores the average and current value"""
+
+from tqdm import tqdm
+import torch.nn.functional as F
 import torch
 from ignite.exceptions import NotComputableError
 from ignite.metrics.metric import Metric
 from ignite.engine import Events
 
-class StatMetric(Metric):
+class KNNMonitor(Metric):
     def __init__(self, output_transform=lambda x: x):
-        super(StatMetric, self).__init__(output_transform)
+        super(KNNMonitor, self).__init__(output_transform)
 
         self.log_iter = True
-        self.reset()
+
+    def knn_monitor(model, memory_data_loader, test_data_loader, epoch, k=200, t= 0.1, hide_progress=False):
+        model.eval()
+
 
     # triggered every epoch started
     def reset(self):
-        self._val = 0
-        self._avg = 0
         self._sum = 0
-        self._num_examples = 0
+        slef._num_examples = 0
 
     # triggered every batch completed
     def update(self, output): # 'simsiam_loss': loss.item(), batch_size
-        self._val = output[0]
+        average_loss = output[0]
         N = output[1]
 
-        self._sum += self._val * N
+        self._sum += average_loss * N
         self._num_examples += N
-        self._avg = self._sum / self._num_examples
     
     # triggered every epoch completed 
     def compute(self):
