@@ -3,137 +3,153 @@ import os
 from collections import defaultdict
 
 import PIL
-from PIL import Image
+from PIL import Image, ImageOps
 from tqdm import tqdm
 
 import torch
 from torchvision import datasets, transforms
-from utils import *
+from torchvision.transforms import GaussianBlur
+import torchvision.transforms as T
 
+from utils import *
 from .vision import VisionDataset
 
-image_types = ['cifar10', 'cifar100', 'imagenet']
-transform_types = ['sim_siam', 'train_eval', 'eval']
+
+transform_types = ['moco', 'sim_siam', 'byol', 'eval', 'simclr', 'swav']
+
 # image_size = # imagenet 224 # cifar 32
 delimiter = '/'
 # two_crops_transform = True
 
-'''
-torchvision.datasets are subclasses of torch.utils.data.Dataset.
-i.e. they have __getitem__ and __len__ methods implemented.
-Hence, they can all be passed to torch.utils.data.DataLoader.
-'''
+imagenet_norm = [[0.485, 0.456, 0.406],[0.229, 0.224, 0.225]]
+cifar_norm = [[0.4914, 0.4822, 0.4465],[0.2023, 0.1994, 0.2010]]
 
-'''
-torchvision.datasets.ImageFolder(root: str, transform: Optional[Callable]=None,
-target_transform: Optional[Callable]=None, ...)
-Args:
-    transform (callable, optional) - A function/transform that takes in an PIL image and returns a transformed version.
-    target_transform (callable, optional) - A function/transform that takes in the target and transforms it.
-'''
+class StandardTransform:
+    def __init__(self, image_size=224, train=True, double=True, normalize=imagenet_norm):
+        self.double = double 
+        self.train = train 
 
-
-#----------------------CIFAR----------------------------------------#
-mean_std = transforms.Normalize(mean=[0.4914, 0.4822, 0.4465], std=[0.2023, 0.1994, 0.2010])
-
-cifar_transform_dict = {
-        'eval': transforms.Compose([
-            transforms.ToTensor(),
-            mean_std
-            ]),
-        'train_eval': transforms.Compose([
-            transforms.RandomCrop(32, padding=4),
-            transforms.RandomHorizontalFlip(),
-            transforms.ToTensor(),
-            mean_std
-            ])
-        }
-#--------------------IMAGENET---------------------------------------#
-normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]) # imagenet norm
-
-imagenet_transform_dict = {
-        'sim_siam': transforms.Compose([
-            transforms.RandomResizedCrop(224, scale=(0,2, 1.0)),
-            transforms.RandomHorizontalFlip(),
-            transforms.RandomApply([transforms.ColorJitter(0.4,0.4,0.4,0.1)], p=0.8),
-            transforms.RandomGrayscale(p=0.2),
-            T.RandomApply([transforms.GaussianBlur(kernel_size=image_size//20*2+1, sigma=(0.1, 2.0))], p=0.5),
-            transforms.ToTensor(),
-            normalize
-            ]), # similar to simclr, mocov2
-        'moco': transforms.Compose([
-            transforms.RandomResizedCrop(224, scale(0.2, 1.)),
-            transforms.RandomHorizontalFlip(),
-            transforms.RandomApply([
-                transforms.ColorJitter(0.4, 0.4, 0.4, 0.1)], p=0.8),
-                transforms.RandomGrayscale(p=0.2),
-                transforms.RandomApply([GaussianBlur([0.1, 2.0])], p=0.5),
+        if train == True:
+            self.transform = transforms.Compose([
+                transforms.RandomResizedCrop(image_size, scale=(0.08, 1.0), ratio=(3.0/4.0,4.0/3.0), interpolation=Image.BICUBIC),
+                transforms.RandomHorizontalFlip(),
                 transforms.ToTensor(),
-                transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-            ]),
-        'train_eval': transforms.Compose([
-            transforms.RandomResizedCrop(224, scale=(0.08, 1.0)),
-            transforms.RnadomHorizontalFlip(),
-            transforms.ToTensor(),
-            normalize
-            ]),
-        'eval': transforms.Compose([
-            transforms.Resize(256),
-            transforms.CenterCrop(224),
-            transforms.ToTensor(),
-            normalize
+                transforms.Normalize(*normalize)
             ])
-        }
-#------------------------------------------------------------------------#
-class TwoCropsTransform: # only for train
-    ''' takes two random crops of one image as the query and key '''
-    def __init__(self, transform):
-        self.transform = transform
+        else:
+            self.transform = transforms.Compose([
+                transforms.Resize(int(image_size*(8/7)), interpolation=Image.BICUBIC), # 224 -> 256 
+                transforms.CenterCrop(image_size),
+                transforms.ToTensor(),
+                transforms.Normalize(*normalize)
+            ])
 
     def __call__(self, x):
-        q = self.transform(x)
-        k = self.transform(x)
-        return q, k
+        if double == True:
+            return self.transform(x), self.transform(x)
+        else:
+            return self.transform(x)
 
-# ------------------------------------------------------------------------#
-def preprocess_images(args):
-    if args.datasets == 'imagenet':
-        return load_imagenet(args)
-    else:
-        return load_cifar(args)
-
-# --------------------------------------------------------------------------#
-def load_imagenet(args):
-    traindir = os.path.join(args.image_path, 'train')
-    valdir = os.path.join(args.image_path, 'val')
-
-    trainloader = torch.utils.data.DataLoader(datasets.ImageFolder(traindir, TwoCropsTransform(imagenet_transform_dict[args.model_name])), batch_size=args.batch_sizes[0], shuffle=args.shuffle[0], num_workers=args.num_workers, pin_memory=True)
-
-    traintestloader = torch.utils.data.DataLoader(datasets.ImageFolder(traindir, imagenet_transform_dict['train_eval']), batch_size=args.batch_sizes[0], shuffle=args.shuffle[0], num_workers=args.num_workers, pin_memory=True)
+    @classmethod
+    def resolve_args(cls, args, train, double):
+        image_size = args.get("image_size", 224)
+        normalize = args.get("normalize")
+        return cls(image_size=image_size, train=train, double=double, normalize=normalize)
 
 
-    valloader = torch.utils.data.DataLoader(datasets.ImageFolder(valdir, imagenet_transform_dict['eval']), batch_size=args.batch_sizes[1], shuffle=args.shuffle[1], num_workers=args.num_workers, pin_memory=True)
-    print('preparing imagenet dataset completed')
-    return trainloader, traintestloader, valloader
+class BYOLTransform:
+    def __init__(self, image_size=224, train=True, double=True, normalize=imagenet_norm):
+        self.double = double
+        self.train = train 
 
-def load_cifar(args):
-    if args.datasets == 'cifar10':
-        dataloader = datasets.CIFAR10
-    else:
-        dataloader = datasets.CIFAR100
+        self.transform1 = transforms.Compose([
+            transforms.RandomResizedCrop(image_size, scale=(0.08, 1.0), ratio=(3.0/4.0,4.0/3.0), interpolation=Image.BICUBIC),
+            transforms.RandomHorizontalFlip(p=0.5),
+            transforms.RandomApply([transforms.ColorJitter(0.4,0.4,0.2,0.1)], p=0.8),
+            transforms.RandomGrayscale(p=0.2),
+            transforms.GaussianBlur(kernel_size=image_size//20*2+1, sigma=(0.1, 2.0)), # simclr paper gives the kernel size. Kernel size has to be odd positive number with torchvision
+            transforms.ToTensor(),
+            transforms.Normalize(*normalize)
+        ])
+        self.transform2 = transforms.Compose([
+            transforms.RandomResizedCrop(image_size, scale=(0.08, 1.0), ratio=(3.0/4.0,4.0/3.0), interpolation=Image.BICUBIC),
+            transforms.RandomHorizontalFlip(p=0.5),
+            transforms.RandomApply([transforms.ColorJitter(0.4,0.4,0.2,0.1)], p=0.8),
+            transforms.RandomGrayscale(p=0.2),
+            # transforms.RandomApply([GaussianBlur(kernel_size=int(0.1 * image_size))], p=0.1),
+            transforms.RandomApply([transforms.GaussianBlur(kernel_size=image_size//20*2+1, sigma=(0.1, 2.0))], p=0.1),
+            transforms.RandomApply([Solarization()], p=0.2),
+            
+            transforms.ToTensor(),
+            transforms.Normalize(*normalize)
+        ])
+        self.train_transform = transforms.Compose([
+                transforms.RandomResizedCrop(image_size, scale=(0.08, 1.0), ratio=(3.0/4.0,4.0/3.0), interpolation=Image.BICUBIC),
+                transforms.RandomHorizontalFlip(),
+                transforms.ToTensor(),
+                transforms.Normalize(*normalize)
+            ])
 
-    trainset = dataloader(root=args.image_path, train=True, download=True, transform=TwoCropsTransform(cifar_transform_dict['train_eval']))
-    trainloader = torch.utils.data.DataLoader(trainset, batch_size=args.batch_sizes[0], shuffle=args.shuffle[0], num_workers=args.num_workers)
+        self.val_transform = transforms.Compose([
+                transforms.Resize(int(image_size*(8/7)), interpolation=Image.BICUBIC), # 224 -> 256 
+                transforms.CenterCrop(image_size),
+                transforms.ToTensor(),
+                transforms.Normalize(*normalize)
+            ])
 
-    traintestset = dataloader(root=args.image_path, train=True, download=True, transform=cifar_transform_dict['train_eval'])
-    traintestloader = torch.utils.data.DataLoader(trainset, batch_size=args.batch_sizes[0], shuffle=args.shuffle[0], num_workers=args.num_workers)
+    def __call__(self, x):
+        if self.train and self.double:
+            return self.transform1(x), self.transform2(x)
+        elif self.train:
+            return self.train_transform(x)
+        else:
+            return self.val_transform(x)
 
-    testset = dataloader(root=args.image_path, train=False, download=True, transform=cifar_transform_dict['eval'])
-    testloader = torch.utils.data.DataLoader(testset, batch_size=args.batch_sizes[1], shuffle=args.shuffle[1], num_workers=args.num_workers)
+class SimCLRTransform:
+    def __init__(self, image_size=224, train=True, double=True, normalize=imagenet_norm):
+        s = 1.0
+        self.double = double
+        self.train = train
+        self.transform = T.Compose([
+            T.RandomResizedCrop(image_size, scale=(0.2, 1.0)),
+            T.RandomHorizontalFlip(),
+            T.RandomApply([T.ColorJitter(0.8*s,0.8*s,0.8*s,0.2*s)], p=0.8),
+            T.RandomGrayscale(p=0.2),
+            T.RandomApply([T.GaussianBlur(kernel_size=image_size//20*2+1, sigma=(0.1, 2.0))], p=0.5),
+            # We blur the image 50% of the time using a Gaussian kernel. We randomly sample σ ∈ [0.1, 2.0], and the kernel size is set to be 10% of the image height/width.
+            T.ToTensor(),
+            T.Normalize(*mean_std)
+        ])
 
-    print('preparing dataset cifar completed')
+    def __call__(self, x):
+        if self.double:
+            return self.transform(x), self.transform(x)
+        else:
+            return self.transform(x)
 
-    return trainloader, traintestloader, testloader
+
+class SimSiamTransform:
+    def __init__(self, image_size=224, train=True, double=True, normalize=imagenet_norm):
+        p_blur = 0.5 if image_size > 32 else 0
+        self.train = train
+        self.double = double
+        self.transform = T.Compose([
+            T.RandomResizedCrop(image_size, scale=(0.2, 1.0)),
+            T.RandomHorizontalFlip(),
+            T.RandomApply([T.ColorJitter(0.4,0.4,0.4,0.1)], p=0.8),
+            T.RandomGrayscale(p=0.2),
+            T.RandomApply([T.GaussianBlur(kernel_size=image_size//20*2+1, sigma=(0.1, 2.0))], p=p_blur),
+            T.ToTensor(),
+            T.Normalize(*mean_std)
+        ])
+
+    def __call__(self, x):
+        if self.double:
+            return self.transform(x), self.transform(x)
+        else:
+            return self.transform(x)
+
+
 
 
 

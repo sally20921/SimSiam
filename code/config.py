@@ -1,6 +1,10 @@
 config = {
     'distributed': False,
-    'stage': 'pretrain', # linear_eval
+    'stage': 'pretrain', # linear_eval #fine_tune
+    'image_size': 224,
+    'normalize': [[0.485, 0.456, 0.406],[0.229, 0.224, 0.225]],
+    # imagenet_norm = [[0.485, 0.456, 0.406],[0.229, 0.224, 0.225]]
+    # cifar_norm = [[0.4914, 0.4822, 0.4465],[0.2023, 0.1994, 0.2010]]
     'transforms': 'sim_siam_transform',
     'model_name': 'sim_siam', 
     'log_path': 'data/log',

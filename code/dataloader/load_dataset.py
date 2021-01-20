@@ -1,61 +1,49 @@
 from collections import defaultdict
+import math
+import os
+from collections import defaultdict
+
+import PIL
+from PIL import Image, ImageOps
+from tqdm import tqdm
 
 import torch
+import torchvision
+from torchvision import datasets, transforms
+from torchvision.transforms import GaussianBlur
 
 from utils import *
-from .preprocess_image import preprocess_images
 
-import os
-import re
-from tqdm import tqdm
-import numpy as np
+dataset_types = ['mnist', 'stl10', 'cifar10', 'cifar100', 'imagenet', 'random']
+imagenet_norm = [[0.485, 0.456, 0.406],[0.229, 0.224, 0.225]]
+cifar_norm = [[0.4914, 0.4822, 0.4465],[0.2023, 0.1994, 0.2010]]
 
-from torch.utils.data import Dataset, DataLoader
+def get_dataset(args, train_transform, val_transform):
+    if args.datasets == 'mnist':
+        trainloader = torchvision.datasets.MNIST(args.image_path, train=True, transform=train_transform, download=True)
+        valloader = torchvision.datasets.MNIST(args.image_path, train=False, transform=val_transform, download=True)
 
-modes = ['train', 'val', 'test']
+    elif args.dataset == 'stl10':
+        trainloader = torchvision.datasets.STL10(args.image_path, split='train+unlabeled', transform = train_transform, download=True)
+        valloader = torchvision.datasets.STL10(args.image_path, split='test', transform=val_transform, download=True)
 
-class BaseDataset:
-    def __init__(self, args, train_test_transforms):
-        self.config = args
-        self.train_test_transforms = train_test_transforms
-        self.dataset = self.load_data()
- 
-    def load_data(self):
+    elif args.dataset == 'cifar10':
+        trainloader = torchvision.datasets.CIFAR10(args.image_path, train=True, transform=train_transform, download=True)
+        valloader = torchvision.datasets.CIFAR10(args.image_path, train=False, transform=val_transform, download=True)
+
+    elif args.dataset == 'cifar100':
+        trainloader = torchvision.datasets.CIFAR100(args.image_path, train=True, transform=train_transform, download=True)
+        valloader = torchvision.datasets.CIFAR100(args.image_path, train=False, transform=val_transform, download=True)
+    
+    elif args.dataset == "imagenet":
+        # assume imagenet dataset already exists, because it takes too long to download imagenet data
+        traindir = os.path.join(args.image_path, 'train')
+        valdir = os.path.join(args.image_path, 'val')
+        trainloader = torchvision.datasets.ImageFolder(traindir, transform=train_transform)
+        valloader = torchvision.datasets.ImageFolder(valdir, transform=val_transform)
+    else:
         raise NotImplementedError
 
-    def __call__:
-        return self.dataset
-
-class ImageNetDataset(BaseDataset):
-    def __init__(self, args, train_test_transforms):
-        super().__init__(self, args=args, train_test_transforms=train_test_transforms)
-
-    def load_data(self):
-        args = self.config
-        if args["stage"] == 'pretrain':
-            print("Loading pretraining data")
-            traindir = os.path.join(args["image_path"], 'train')
-            trainloader = torch.utils.data.DataLoader()
-            return trainloader
-
-        else: # args["stage"] == 'linear_eval':
-            print("Loading evaluation data")
-            valdir = os.path.join(args["image_path"], 'val')
-            valloader = torch.utils.data.DataLoader()
-            return valloader
-
-def load_data(args):
-    print('Loading image data')
-
-    train_iter, traintest_iter, val_iter = preprocess_images(args)
-
-    return {'train': train_iter, 'traintest': traintest_iter, 'val': val_iter, 'test': val_iter}
-
-def get_iterator(args):
-    iters = load_data(args)
-    print("Data loading done")
-
-    return iters
-
-
-
+    train_loader = torch.utils.data.DataLoader(trainloader, batch_size=args.batch_sizes[0], shuffle=args.shuffle[0], num_workers=args.num_workers, pin_memory=True)
+    val_loader = torch.utils.data.DataLoader(valloader, batch_size=args.batch_sizes[1], shuffle=args.shuffle[1], num_workers=args.num_workers, pin_memory=True)
+    return {'train_iter': train_loader, 'val_iter': val_loader, 'test_iter': val_loader}

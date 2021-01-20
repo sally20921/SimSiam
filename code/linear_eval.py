@@ -20,26 +20,26 @@ from optimizer import get_optimizer, get_scheduler
 
 from utils import prepare_batch
 
-def get_evaluator(args, model, loss_fn, metrics={}):
-    from termcolor import colored
+def get_trainer(args, model, classifier, loss_fn, optimizer, metrics={}):
 
-    sample_count = 0
-
-    def _inference(evaluator, batch):
-        nonlocal sample_count
-
+    def update_model(trainer, batch):
         model.eval()
         classifier.train()
         with torch.no_grad():
             net_inputs, target = prepare_batch(args, batch)
             feature = model(**net_inputs)
-            y_pred = classifier(feature)
-            batch_size = y_pred.shape[0]
-            loss, stats = loss_fn(y_pred, target)
 
-            return loss.item(), stats, batch_size, y_pred, target 
+        y_pred = classifier(feature)
+        batch_size = y_pred.shape[0]
+        loss, stats = loss_fn(y_pred, target)
 
-    engine = Engine(_inference)
+        loss.backward()
+        optimizer.step()
+        scheduler.step()
+
+        return loss.item(), stats, batch_size, y_pred, target 
+
+    engine = Engine(update_model)
 
     metrics = {**metrics, **{
         'loss': StatMetric(ouput_transform=lambda x: (x[0], x[2])),
@@ -53,7 +53,24 @@ def get_evaluator(args, model, loss_fn, metrics={}):
 
     return engine
 
+def get_evaluator(args, model, loss_fn, metrics={}):
+    from termcolor import colored
+    sample_count = 0
+    def _inference(evaluator, batch):
+        nonlocal sample_count
 
+        model.eval()
+        with torch.no_grad():
+            net_inputs, target = prepare_batch(args, batch)
+            y_pred = model(**net_inputs)
+            batch_size = y_pred.shape[0]
+            loss, stats = loss_fn(y_pred, target)
+
+            return loss.item(), stats, batch_size, y_pred, target
+
+    engine= Engine(_inference)
+
+    return engine 
 def evaluate(args):
     print(args)
     transforms = get_aug(args)

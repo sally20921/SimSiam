@@ -32,14 +32,14 @@ def add_datasets():
                         (str(member.__name__).endswith('Transform') and 'transforms' in member.__dict__.keys())):
                             dataset_dict[underscore(str(member.__name__))] = member # contains either Dataset or Transform Class
 
-def get_dataset(args, transforms):
-    dataset = dataset_dict[args.datasets]
-    dataset = dataset.resolve_args(args, transforms)
-    return dataset # return train_iter for train, val_iter for val etc.
+#def get_dataset(args, transforms):
+#    dataset = dataset_dict[args.datasets]
+#    dataset = dataset.resolve_args(args, transforms)
+#    return dataset # return train_iter for train, val_iter for val etc.
 
-def get_aug(args):
+def get_aug(args, train, double):
     aug = dataset_dict[args.transforms]
-    aug = aug.resolve_args(args)
+    aug = aug.resolve_args(args, train, double)
     return aug
 
 add_datasets()

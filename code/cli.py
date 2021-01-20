@@ -8,7 +8,8 @@ import torch
 import numpy as np
 
 from config import config, debug_options
-from dataloader.load_dataset import get_iterator
+from dataloader.load_dataset import get_dataset
+from dataloader import get_aug
 from utils import wait_for_key, suppress_stdout
 from train import train
 #from evaluate import evaluate
@@ -43,8 +44,16 @@ class Cli:
         from tqdm import tqdm 
         print("check_dataloader")
 
-        args = self._default_args(**kwargs)
-        iters = get_iterator(args)
+        args = self._default_args(**kwargs) 
+        train_aug = get_aug(args=args, train=True, double=True)
+        val_aug = get_aug(args=args, train=True, double=False)
+        pretrain_iters = get_dataset(args, train_aug, val_aug)
+
+        t_aug = get_aug(args, True, False)
+        v_aug = get_aug(args, False, False)
+        linear_iters = get_dataset(args, t_aug, v_aug)
+
+
         #print(iters['train'])
 
         #for batch_idx, (inputs, targets) in enumerate(iters['train']):
@@ -74,12 +83,20 @@ class Cli:
         #    #    import ipdb; ipdb.set_trace() # XXX DEBUG
         #        batch = prepare_batch(args, batch)
 
-    def train(self, **kwargs):
+    def pretrain(self, **kwargs):
         args = self._default_args(**kwargs)
         train(args)
         wait_for_key()
 
+    def linear_eval(self, **kwargs):
+        args = self._default_args(**kwargs)
+        linear_eval(args)
+        wait_for_key()
 
+    def fine_tune(self, **kwargs):
+        args = self._default_args(**kwargs)
+        fine_tune(args)
+        wait_for_key()
 def resolve_paths(config):
     paths = [k for k in config.keys() if k.endswith('_path')]
     res  = {}
