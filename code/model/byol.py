@@ -1,11 +1,16 @@
+import copy
+import random
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
+from torchvision import transforms
+from math import pi, cos
 import math
 from .modules import *
 from torchvision.models import resnet50
 
 class MLP(nn.Module):
-    def __init__(self, in_dim, out_dim, hsz, n_layers):
+    def __init__(self, args, in_dim, out_dim, hsz, n_layers):
         super(MLP, self).__init__()
 
         layers = []
@@ -16,8 +21,8 @@ class MLP(nn.Module):
             else:
                 layers.extend([
                     nn.Linear(prev_dim, hsz),
-                    nn.ReLU(True),
-                    nn.Dropout(0.5)
+                    nn.BatchNorm1d(hsz, args.eps, args.momentum),
+                    nn.ReLU(True)
                 ])
                 prev_dim = hsz
 
@@ -26,65 +31,19 @@ class MLP(nn.Module):
     def forward(self, x):
         return self.main(x)
 
-class Projection(nn.Module):
-    def __init__(self, in_dim, out_dim=2048, hsz=2048, n_layers=3):
+class BYOL(nn.Module):
+    def __init__(self, args, use_outputs):
         super().__init__()
-
-        layers = []
-        prev_dim = in_dim
-        for i in range(n_layers):
-            if i == n_layers - 1:
-                layers.extend([
-                    nn.Linear(prev_dim, out_dim),
-                    nn.BatchNorm1d(out_dim)
-                ])
-            else:
-                layers.extend([
-                    nn.Linear(prev_diim, hsz),
-                    nn.BatchNorm1d(hsz),
-                    nn.ReLU(inplace=True)
-                ])
-                prev_dim = hsz
-        self.main = nn.Sequential(*layers)
-
-    def forward(self, x):
-        return self.main(x)
-
-class Prediction(nn.Module):
-    def __init__(self, in_dim=2048, out_dim=2048, hsz=512, n_layers=2):
-        super().__init__()
-
-        layers = []
-        prev_dim = in_dim
-        for i in range(n_layers):
-            if i == n_layers - 1:
-                layers.append(nn.Linear(prev_dim, out_dim))
-            else:
-                layers.extend([
-                    nn.Linear(prev_dim, hsz),
-                    nn.BatchNorm1d(hsz),
-                    nn.ReLU(inplace=True)
-                ])
-                prev_dim = hsz
-
-            self.main = nn.Sequential(*layers)
-
-        def forward(self, x):
-            return self.main(x)
-
-
-def SimSiam(nn.Module):
-    def __init__(self, use_outputs):
-        super(SimSiam, self).__init__()
 
         self.backbone = resnet50()
-        self.projector = Projection(resnet50().output_dim)
-
-        self.encoder = nn.Sequential( # f encoder
+        self.projector = MLP(args, resnet50().output_dim, 256, 4096, 2)
+        self.online_encoder = nn.Sequential(
                 self.backbone,
                 self.projector
         )
-        self.predictor = Prediction()
+
+        self.target_encoder = copy.deepcopy(self.online_encoder)
+        self.online_predictor = MLP(256, 256, 4096, 2)
 
         self.net_output_key = use_outputs
     
@@ -92,6 +51,7 @@ def SimSiam(nn.Module):
     def resolve_args(cls, args):
         return cls(args, args.use_outputs)
 
+    # {'p_i', 'p_j', 'z_i', 'z_j'}
     def forward(self, x_1, x_2):
         f, h = self.encoder, self.predictor
         z_i, z_j = f(x_1), f(x_2)

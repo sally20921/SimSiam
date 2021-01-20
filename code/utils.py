@@ -63,6 +63,14 @@ def prepare_batch(args, batch):
     # return batch in output form
     return net_input, target
 
+# for 1 batch
+# output: x, target
+# batch: x, target
+def _prepare_batch(args, batch):
+    x, target = batch
+    x = x.to(args.device).contiguous()
+    target = target.to(args.device).contiguous()
+    return x, target
 
 def wait_for_key(key="y"):
     text = ""

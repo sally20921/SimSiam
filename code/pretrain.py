@@ -21,6 +21,12 @@ from metric.stat_metric import StatMetric, KNNMonitor
 from ignite.metrics import Accuracy, TopKCategoricalAccuracy
 import numpy as np
 
+from apex import amp
+import ignite
+import ignite.distributed as idist
+from ignite.contrib.engines import common
+from ignite.engine import Engine, Events, create_supervised_evaluator, _prepare_batch
+
 def get_trainer(args, model, loss_fn, optimizer, scheduler):
     def update_model(trainer, batch):
         model.train()
@@ -35,7 +41,9 @@ def get_trainer(args, model, loss_fn, optimizer, scheduler):
         loss = loss_fn(y_pred)
         loss = loss.mean() #dpp
         
-        loss.backward()
+        # loss.backward()
+        with amp.scale_loss(loss, optimizer, loss_id=0) as scaled_loss:
+            scaled_loss.backward()
         optimizer.step()
         scheduler.step()
         
@@ -65,6 +73,12 @@ def pretrain(args):
     sub_optimizer = get_sub_optimizer(args, model)
     optimizer = get_optimizer(args, sub_optimizer)
     scheduler = get_scheduler(args, optimizer)
+    
+    # setup Nvidia/Apex AMP
+    model, optimizer = amp.initialize(model, optimizer, opt_level=args.fp16_opt_level, num_losses=1)
+
+    # adapt model to dist conf
+    model = idist.auto_model(model)
 
     trainer = get_trainer(args, model, loss_fn, optimizer, scheduler)
 

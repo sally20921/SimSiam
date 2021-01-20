@@ -2,7 +2,7 @@ stages = ['pretrain', 'linear_eval', 'fine_tune']
 models = ['sim_siam', 'byol', 'simclr', 'swav']
 
 log_keys = [
-    'model_name',
+    'which_model',
     # 'feature_pooling_method', # useless
 ]
 
@@ -232,7 +232,7 @@ pretrain = {
         'layers': 3, 
         'dropout': 0.5,
         # loss
-        'loss_name': 'sim_siam_loss',
+        'loss_name': 'sim_siam_loss', # you can use sim_siam_loss for byol
         # optimizer
         'optimizer': 'lars', # lars
         'sub_optimizer': 'sgd' # sgd # adam #adagrad # optimizer to wrap larc

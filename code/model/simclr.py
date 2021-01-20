@@ -49,7 +49,7 @@ class Projection(nn.Module):
     def forward(self, x):
         return self.main(x)
 
-def SimSiam(nn.Module):
+class SimCLR(nn.Module):
     def __init__(self, use_outputs):
         super(SimSiam, self).__init__()
 

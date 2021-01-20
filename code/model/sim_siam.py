@@ -73,7 +73,7 @@ class Prediction(nn.Module):
             return self.main(x)
 
 
-def SimSiam(nn.Module):
+class SimSiam(nn.Module):
     def __init__(self, use_outputs):
         super(SimSiam, self).__init__()
 
