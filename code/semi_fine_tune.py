@@ -26,9 +26,23 @@ import numpy as np
 import tensorflow_datasets as tfds
 import tensorflow as tf
 
-ds = tfds.load('imagenet2012_subset', split='train', as_supervised=True, shuffle_files=True)
-ds = ds.shuffle(1000).batch(128).prefetch(10).take(5)
-for image, label in ds:
+batch_size = 4096
+dataset_name = 'imagenet2012_subset'
+tfds_dataset, tfds_info = tfds.load(dataset_name, split='train', as_supervised=True, with_info=True)
+num_images = tfds_info.splits['train'].num_examples
+num_classes = tfds_info.features['label'].num_classes
+
+# momentum = 0.9
+# lr = 0.8
+# random cropping, resizing to 224x224 used
+def _preprocess(x):
+    x['image'] = preprocess_image(x['image'], 224, 224)
+
+x = tfds_dataset.map(_preprocess).batch(batch_size)
+x = tf.data.make_one_shot_iterator(x).get_next()
+
+images, labels = x['image'], x['label']
+for image, label in x:
     pass
 ''' 
 sample 1% or 10% of labeled ILSVRC-12 trainiing datasets in a class-balanced way.
